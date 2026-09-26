@@ -153,19 +153,19 @@ namespace HelpDeskTicketingSystem.Modules.Admin
                     "Clients Only",
                     "Agents Only",
                     "Dispatchers Only",
-                    "Delete a User",
+                    //"Delete a User",
                     "Back to Menu"
                 };
 
                 int choice = ConsoleUI.PrintMenu("Select user filter/action option:", filter);
 
-                if (choice == 6) return;
+                if (choice == 5) return;
 
-                if (choice == 5)
-                {
-                    DeleteUserProcess(currentAdmin);
-                    continue;
-                }
+                //if (choice == 5)
+                //{
+                //    DeleteUserProcess(currentAdmin);
+                //    continue;
+                //}
 
                 List<User> filteredUsers = new List<User>();
                 foreach (var user in DataStore.Users)
@@ -191,9 +191,11 @@ namespace HelpDeskTicketingSystem.Modules.Admin
                 if (filteredUsers.Count == 0)
                 {
                     ConsoleUI.PrintWarning("No users found for the selected filter.");
+                    ConsoleUI.Pause();
                 }
                 else
                 {
+                    ConsoleUI.ClearScreen();
                     ConsoleUI.PrintHeader("Users List");
                     string[] headers = new string[] { "ID", "Name", "Email", "Role" };
                     List<string[]> rows = new List<string[]>();
@@ -205,15 +207,29 @@ namespace HelpDeskTicketingSystem.Modules.Admin
                     }
 
                     ConsoleUI.PrintTable(headers, rows);
+
+                    string[] inViewOptions = new string[] {
+                    "Delete a user",
+                    "Back to Menu"
+                    };
+
+                    int option = ConsoleUI.PrintMenu("Select operation:", inViewOptions);
+                    switch (option)
+                    {
+                        case 1:
+                            DeleteUserProcess(currentAdmin);
+                            break;
+                        case 2:
+                            break;
+                    }
                 }
 
-                ConsoleUI.Pause();
             }
         }
 
         private static void DeleteUserProcess(HelpDeskTicketingSystem.Models.Admin currentAdmin)
         {
-            ConsoleUI.ClearScreen();
+            //ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("Delete User Account");
 
             string email = ConsoleUI.ReadEmail("Enter the email of the user to delete: ");
@@ -285,19 +301,19 @@ namespace HelpDeskTicketingSystem.Modules.Admin
                     "In Progress Tickets",
                     "Resolved Tickets",
                     "Closed Tickets",
-                    "Delete a Ticket",
+                    //"Delete a Ticket",
                     "Back to Menu"
                 };
 
                 int choice = ConsoleUI.PrintMenu("Select ticket filter/action:", filterOptions);
 
-                if (choice == 8) return;
+                if (choice == 7) return;
 
-                if (choice == 7)
-                {
-                    DeleteTicketProcess();
-                    continue;
-                }
+                //if (choice == 7)
+                //{
+                //    DeleteTicketProcess();
+                //    continue;
+                //}
 
                 List<Ticket> filteredTickets = new List<Ticket>();
                 foreach (var t in DataStore.Tickets)
@@ -313,9 +329,11 @@ namespace HelpDeskTicketingSystem.Modules.Admin
                 if (filteredTickets.Count == 0)
                 {
                     ConsoleUI.PrintWarning("No tickets found for the selected filter.");
+                    ConsoleUI.Pause();
                 }
                 else
                 {
+                    ConsoleUI.ClearScreen();
                     ConsoleUI.PrintHeader("Tickets List");
                     string[] headers = new string[] { "ID", "Title", "Priority", "Department", "Status" };
                     List<string[]> rows = new List<string[]>();
@@ -331,14 +349,28 @@ namespace HelpDeskTicketingSystem.Modules.Admin
                         });
                     }
                     ConsoleUI.PrintTable(headers, rows);
+
+                    string[] inViewOptions = new string[] {
+                    "Delete a Ticket",
+                    "Back to Menu"
+                    };
+
+                    int option = ConsoleUI.PrintMenu("Select operation:", inViewOptions);
+                    switch (option)
+                    {
+                        case 1:
+                            DeleteTicketProcess();
+                            break;
+                        case 2:
+                            break;
+                    }
                 }
-                ConsoleUI.Pause();
             }
         }
 
         private static void DeleteTicketProcess()
         {
-            ConsoleUI.ClearScreen();
+            //ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("Delete Ticket");
 
             ConsoleUI.Print("Enter ticket ID to delete: ");
@@ -366,7 +398,7 @@ namespace HelpDeskTicketingSystem.Modules.Admin
                 return;
             }
 
-            if (ConsoleUI.Confirm($"Are you sure you want to delete ticket '{targetTicket.Title}'? (y/n): "))
+            if (ConsoleUI.Confirm($"Are you sure you want to delete ticket '{targetTicket.Title}'?"))
             {
                 DataStore.Tickets.Remove(targetTicket);
                 ConsoleUI.PrintSuccess($"Ticket '{targetTicket.Title}' deleted successfully.");
