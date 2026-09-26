@@ -13,3 +13,19 @@ D:\DEPI\Projects\HelpDeskTicketingSystem\HelpDeskTicketingSystem\obj\Debug\net10
 D:\DEPI\Projects\HelpDeskTicketingSystem\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDeskTicketingSystem.genruntimeconfig.cache
 D:\DEPI\Projects\HelpDeskTicketingSystem\HelpDeskTicketingSystem\obj\Debug\net10.0\ref\HelpDeskTicketingSystem.dll
 D:\DEPI\Projects\HelpDeskTicketingSystem\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDesk.F0C1BEF8.Up2Date
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\bin\Debug\net10.0\HelpDeskTicketingSystem.exe
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\bin\Debug\net10.0\HelpDeskTicketingSystem.deps.json
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\bin\Debug\net10.0\HelpDeskTicketingSystem.runtimeconfig.json
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\bin\Debug\net10.0\HelpDeskTicketingSystem.dll
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\bin\Debug\net10.0\HelpDeskTicketingSystem.pdb
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDeskTicketingSystem.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDeskTicketingSystem.AssemblyInfoInputs.cache
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDeskTicketingSystem.AssemblyInfo.cs
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDeskTicketingSystem.csproj.CoreCompileInputs.cache
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDeskTicketingSystem.sourcelink.json
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDeskTicketingSystem.dll
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\refint\HelpDeskTicketingSystem.dll
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDeskTicketingSystem.pdb
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDeskTicketingSystem.genruntimeconfig.cache
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\ref\HelpDeskTicketingSystem.dll
+C:\Users\Sara Osama\source\repos\HelpDeskTicketingSystem\obj\Debug\net10.0\HelpDesk.F0C1BEF8.Up2Date
