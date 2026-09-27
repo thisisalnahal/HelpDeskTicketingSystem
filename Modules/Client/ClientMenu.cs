@@ -13,17 +13,15 @@ namespace HelpDeskTicketingSystem.Modules.Client
     {
         public static void Show(Models.Client client)
         {
-            ConsoleUI.ClearScreen();
             while (true)
             {
+                ConsoleUI.ClearScreen();
                 int choice = ConsoleUI.PrintMenu(
                     "Client Menu",
                     new string[]
                     {
                         "Create Ticket",
-                        "View My Tickets And Details",
-                        "Add Comment",
-                        "Close Ticket",
+                        "View My Tickets",
                         "Edit Profile",
                         "Change Password",
                         "Logout"
@@ -36,26 +34,18 @@ namespace HelpDeskTicketingSystem.Modules.Client
                         break;
 
                     case 2:
-                        ViewMyTicketsAndDetails(client);
+                        ViewMyTickets(client);
                         break;
 
                     case 3:
-                        AddComment(client);
-                        break;
-
-                    case 4:
-                        CloseTicket(client);
-                        break;
-
-                    case 5:
                         EditProfile(client);
                         break;
 
-                    case 6:
+                    case 4:
                         ChangePassword(client);
                         break;
 
-                    case 7:
+                    case 5:
                         ConsoleUI.PrintInfo("Logging out...");
                         ConsoleUI.Pause();
                         return;
@@ -86,7 +76,7 @@ namespace HelpDeskTicketingSystem.Modules.Client
             ConsoleUI.Pause();
         }
 
-        private static void ViewMyTicketsAndDetails(Models.Client client)
+        private static void ViewMyTickets(Models.Client client)
         {
             ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("My Tickets");
@@ -100,18 +90,23 @@ namespace HelpDeskTicketingSystem.Modules.Client
                 return;
             }
 
-            
-            foreach (Ticket ticket in tickets)
+            string[] headers = new string[] { "ID", "Title", "Priority", "Department", "Status" };
+            List<string[]> rows = new List<string[]>();
+
+            foreach (var ticket in tickets)
             {
-                ConsoleUI.PrintInfo(
-                    $"#{ticket.Id} | {ticket.Title} | {ticket.Status} | {ticket.CreatedAt:yyyy-MM-dd}"
-                );
+                rows.Add(new string[] {
+                    ticket.Id.ToString(),
+                    ticket.Title,
+                    ticket.Priority.ToString(),
+                    ticket.Department.ToString(),
+                    ticket.Status.ToString()
+                });
             }
+            ConsoleUI.PrintTable(headers, rows);
 
             ConsoleUI.PrintDivider();
-
-           
-            ConsoleUI.Print("Enter Ticket ID to view details : ");
+            ConsoleUI.Print("Enter Ticket ID to view details or 0 to go back: ");
 
             if (!int.TryParse(Console.ReadLine(), out int ticketId))
             {
@@ -123,7 +118,6 @@ namespace HelpDeskTicketingSystem.Modules.Client
             if (ticketId == 0)
                 return;
 
-          
             Ticket selectedTicket = DataStore.GetTicketById(ticketId);
 
             if (selectedTicket == null || selectedTicket.ClientId != client.Id)
@@ -133,60 +127,83 @@ namespace HelpDeskTicketingSystem.Modules.Client
                 return;
             }
 
-       
-            ConsoleUI.PrintDivider();
-            ConsoleUI.PrintHeader("Ticket Details");
+            ShowTicketDetails(client, selectedTicket);
+        }
 
-            ConsoleUI.PrintInfo($"ID: {selectedTicket.Id}");
-            ConsoleUI.PrintInfo($"Title: {selectedTicket.Title}");
-            ConsoleUI.PrintInfo($"Description: {selectedTicket.Description}");
-            ConsoleUI.PrintInfo($"Status: {selectedTicket.Status}");
-            ConsoleUI.PrintInfo($"Priority: {selectedTicket.Priority}");
-            ConsoleUI.PrintInfo($"Department: {selectedTicket.Department}");
-            ConsoleUI.PrintInfo($"Created: {selectedTicket.CreatedAt:yyyy-MM-dd}");
-
-            ConsoleUI.PrintDivider();
-            ConsoleUI.PrintInfo("Comments:");
-
-            if (selectedTicket.Comments.Count == 0)
+        // Loops on a single ticket's details screen so actions taken here (comment,
+        // close) redraw the updated ticket immediately, instead of forcing the
+        // client back to the list to see the result of what they just did.
+        private static void ShowTicketDetails(Models.Client client, Ticket ticket)
+        {
+            while (true)
             {
-                ConsoleUI.PrintInfo("No comments yet.");
-            }
-            else
-            {
-                foreach (Comment comment in selectedTicket.Comments)
+                ConsoleUI.ClearScreen();
+                ConsoleUI.PrintHeader("Ticket Details");
+
+                ConsoleUI.PrintInfo($"ID: {ticket.Id}");
+                ConsoleUI.PrintInfo($"Title: {ticket.Title}");
+                ConsoleUI.PrintInfo($"Description: {ticket.Description}");
+                ConsoleUI.PrintInfo($"Status: {ticket.Status}");
+                ConsoleUI.PrintInfo($"Priority: {ticket.Priority}");
+                ConsoleUI.PrintInfo($"Department: {ticket.Department}");
+                ConsoleUI.PrintInfo($"Created: {ticket.CreatedAt:yyyy-MM-dd}");
+
+                ConsoleUI.PrintDivider();
+                ConsoleUI.PrintInfo("Comments:");
+
+                if (ticket.Comments.Count == 0)
                 {
-                    ConsoleUI.PrintInfo(
-                        $"{comment.CreatedAt:yyyy-MM-dd HH:mm} - {comment.Text}"
-                    );
+                    ConsoleUI.PrintInfo("No comments yet.");
+                }
+                else
+                {
+                    foreach (Comment comment in ticket.Comments)
+                    {
+                        // Look up the ACTUAL author of each comment, not the
+                        // currently logged-in client - a comment thread can
+                        // include the Agent/Dispatcher too.
+                        User author = DataStore.GetUserById(comment.AuthorId);
+                        string authorName = author != null ? author.Name : "Unknown";
+
+                        ConsoleUI.PrintInfo($"{authorName} - {comment.CreatedAt:yyyy-MM-dd HH:mm}");
+                        ConsoleUI.PrintInfo($"  {comment.Text}");
+                    }
+                }
+
+                ConsoleUI.PrintDivider();
+
+                bool canComment = CommentPermissionService.CanComment(ticket, client);
+                bool canClose = ticket.Status == TicketStatus.Resolved;
+
+                var options = new List<string>();
+                if (canComment) options.Add("Add comment");
+                if (canClose) options.Add("Close ticket");
+                options.Add("Back");
+
+                int choice = ConsoleUI.PrintMenu("Choose operation", options.ToArray());
+                string selected = options[choice - 1];
+
+                if (selected == "Add comment")
+                {
+                    AddComment(client, ticket);
+                }
+                else if (selected == "Close ticket")
+                {
+                    if (CloseTicket(client, ticket))
+                        return; // ticket closed - nothing left to do here, back to list
+                }
+                else
+                {
+                    return; // Back
                 }
             }
-
-            ConsoleUI.Pause();
         }
-        
-        private static void AddComment(Models.Client client)
+
+        private static void AddComment(Models.Client client, Ticket ticket)
         {
             ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("Add Comment");
 
-            ConsoleUI.Print("Enter Ticket ID: ");
-
-            if (!int.TryParse(Console.ReadLine(), out int ticketId))
-            {
-                ConsoleUI.PrintError("Invalid Ticket ID.");
-                ConsoleUI.Pause();
-                return;
-            }
-
-            Ticket ticket = DataStore.GetTicketById(ticketId);
-
-            if (ticket == null || ticket.ClientId != client.Id)
-            {
-                ConsoleUI.PrintError("Ticket not found.");
-                ConsoleUI.Pause();
-                return;
-            }
             if (!CommentPermissionService.CanComment(ticket, client))
             {
                 ConsoleUI.PrintError("You are not allowed to comment on this ticket.");
@@ -210,75 +227,59 @@ namespace HelpDeskTicketingSystem.Modules.Client
             ConsoleUI.Pause();
         }
 
-        private static void CloseTicket(Models.Client client)
+        // Returns true if the ticket was actually closed, so the caller knows
+        // whether to keep showing details (cancelled) or go back (closed).
+        private static bool CloseTicket(Models.Client client, Ticket ticket)
         {
             ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("Close Ticket");
-
-            ConsoleUI.Print("Enter Ticket ID: ");
-
-            if (!int.TryParse(Console.ReadLine(), out int ticketId))
-            {
-                ConsoleUI.PrintError("Invalid Ticket ID.");
-                ConsoleUI.Pause();
-                return;
-            }
-
-            Ticket ticket = DataStore.GetTicketById(ticketId);
-
-            if (ticket == null || ticket.ClientId != client.Id)
-            {
-                ConsoleUI.PrintError("Ticket not found.");
-                ConsoleUI.Pause();
-                return;
-            }
 
             if (ticket.Status != TicketStatus.Resolved)
             {
                 ConsoleUI.PrintError("Only resolved tickets can be closed.");
                 ConsoleUI.Pause();
-                return;
+                return false;
             }
 
             if (!ConsoleUI.Confirm("Close this ticket?"))
             {
-                return;
+                ConsoleUI.PrintInfo("Cancelled.");
+                ConsoleUI.Pause();
+                return false;
             }
 
             string error;
-
-            if (TicketStatusService.TryTransition(
-                ticket,
-                TicketStatus.Closed,
-                client,
-                out error))
+            if (TicketStatusService.TryTransition(ticket, TicketStatus.Closed, client, out error))
             {
                 ConsoleUI.PrintSuccess("Ticket closed successfully.");
+                ConsoleUI.Pause();
+                return true;
             }
             else
             {
                 ConsoleUI.PrintError(error);
+                ConsoleUI.Pause();
+                return false;
             }
-
-            ConsoleUI.Pause();
         }
+
         private static void EditProfile(Models.Client client)
         {
             while (true)
             {
                 ConsoleUI.ClearScreen();
-                ConsoleUI.PrintHeader("Edit Profile");
-
-                ConsoleUI.PrintInfo("1. Edit Name");
-                ConsoleUI.PrintInfo("2. Edit Email");
-                ConsoleUI.PrintInfo("0. Back");
-
-                ConsoleUI.Print("Choose: ");
-                string choice = Console.ReadLine();
+                int choice = ConsoleUI.PrintMenu(
+                    "Edit Profile",
+                    new string[]
+                    {
+                        "Edit Name",
+                        "Edit Email",
+                        "Back"
+                    });
 
                 switch (choice)
                 {
-                    case "1":
+                    case 1:
                         ConsoleUI.ClearScreen();
                         ConsoleUI.PrintHeader("Edit Name");
 
@@ -289,7 +290,7 @@ namespace HelpDeskTicketingSystem.Modules.Client
                         ConsoleUI.Pause();
                         break;
 
-                    case "2":
+                    case 2:
                         ConsoleUI.ClearScreen();
                         ConsoleUI.PrintHeader("Edit Email");
 
@@ -300,13 +301,8 @@ namespace HelpDeskTicketingSystem.Modules.Client
                         ConsoleUI.Pause();
                         break;
 
-                    case "0":
+                    case 3:
                         return;
-
-                    default:
-                        ConsoleUI.PrintError("Invalid choice.");
-                        ConsoleUI.Pause();
-                        break;
                 }
             }
         }
@@ -316,23 +312,17 @@ namespace HelpDeskTicketingSystem.Modules.Client
             ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("Change Password");
 
-            string currentPassword =
-                ConsoleUI.ReadPassword("Enter current password: ");
+            string currentPassword = ConsoleUI.ReadPassword("Enter current password: ");
 
-            if (!PasswordHelper.Verify(
-                currentPassword,
-                client.PasswordHash))
+            if (!PasswordHelper.Verify(currentPassword, client.PasswordHash))
             {
                 ConsoleUI.PrintError("Current password is incorrect.");
                 ConsoleUI.Pause();
                 return;
             }
 
-            string newPassword =
-                ConsoleUI.ReadPassword("Enter new password: ");
-
-            string confirmPassword =
-                ConsoleUI.ReadPassword("Confirm new password: ");
+            string newPassword = ConsoleUI.ReadPassword("Enter new password: ");
+            string confirmPassword = ConsoleUI.ReadPassword("Confirm new password: ");
 
             if (newPassword != confirmPassword)
             {
