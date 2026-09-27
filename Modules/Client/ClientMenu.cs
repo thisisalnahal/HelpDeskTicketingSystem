@@ -21,8 +21,7 @@ namespace HelpDeskTicketingSystem.Modules.Client
                     new string[]
                     {
                         "Create Ticket",
-                        "View My Tickets",
-                        "View Ticket Details",
+                        "View My Tickets And Details",
                         "Add Comment",
                         "Close Ticket",
                         "Edit Profile",
@@ -37,30 +36,26 @@ namespace HelpDeskTicketingSystem.Modules.Client
                         break;
 
                     case 2:
-                        ViewMyTickets(client);
+                        ViewMyTicketsAndDetails(client);
                         break;
 
                     case 3:
-                        ViewTicketDetails(client);
-                        break;
-
-                    case 4:
                         AddComment(client);
                         break;
 
-                    case 5:
+                    case 4:
                         CloseTicket(client);
                         break;
 
-                    case 6:
+                    case 5:
                         EditProfile(client);
                         break;
 
-                    case 7:
+                    case 6:
                         ChangePassword(client);
                         break;
 
-                    case 8:
+                    case 7:
                         ConsoleUI.PrintInfo("Logging out...");
                         ConsoleUI.Pause();
                         return;
@@ -70,6 +65,7 @@ namespace HelpDeskTicketingSystem.Modules.Client
 
         private static void CreateTicket(Models.Client client)
         {
+            ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("Create Ticket");
 
             string title = ConsoleUI.ReadName("Enter ticket title: ");
@@ -90,8 +86,9 @@ namespace HelpDeskTicketingSystem.Modules.Client
             ConsoleUI.Pause();
         }
 
-        private static void ViewMyTickets(Models.Client client)
+        private static void ViewMyTicketsAndDetails(Models.Client client)
         {
+            ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("My Tickets");
 
             List<Ticket> tickets = DataStore.GetTicketsByClient(client.Id);
@@ -103,6 +100,7 @@ namespace HelpDeskTicketingSystem.Modules.Client
                 return;
             }
 
+            
             foreach (Ticket ticket in tickets)
             {
                 ConsoleUI.PrintInfo(
@@ -110,13 +108,10 @@ namespace HelpDeskTicketingSystem.Modules.Client
                 );
             }
 
-            ConsoleUI.Pause();
-        }
-        private static void ViewTicketDetails(Models.Client client)
-        {
-            ConsoleUI.PrintHeader("Ticket Details");
+            ConsoleUI.PrintDivider();
 
-            ConsoleUI.Print("Enter Ticket ID: ");
+           
+            ConsoleUI.Print("Enter Ticket ID to view details : ");
 
             if (!int.TryParse(Console.ReadLine(), out int ticketId))
             {
@@ -125,33 +120,41 @@ namespace HelpDeskTicketingSystem.Modules.Client
                 return;
             }
 
-            Ticket ticket = DataStore.GetTicketById(ticketId);
+            if (ticketId == 0)
+                return;
 
-            if (ticket == null || ticket.ClientId != client.Id)
+          
+            Ticket selectedTicket = DataStore.GetTicketById(ticketId);
+
+            if (selectedTicket == null || selectedTicket.ClientId != client.Id)
             {
                 ConsoleUI.PrintError("Ticket not found.");
                 ConsoleUI.Pause();
                 return;
             }
 
-            ConsoleUI.PrintInfo($"ID: {ticket.Id}");
-            ConsoleUI.PrintInfo($"Title: {ticket.Title}");
-            ConsoleUI.PrintInfo($"Description: {ticket.Description}");
-            ConsoleUI.PrintInfo($"Status: {ticket.Status}");
-            ConsoleUI.PrintInfo($"Priority: {ticket.Priority}");
-            ConsoleUI.PrintInfo($"Department: {ticket.Department}");
-            ConsoleUI.PrintInfo($"Created: {ticket.CreatedAt:yyyy-MM-dd}");
+       
+            ConsoleUI.PrintDivider();
+            ConsoleUI.PrintHeader("Ticket Details");
+
+            ConsoleUI.PrintInfo($"ID: {selectedTicket.Id}");
+            ConsoleUI.PrintInfo($"Title: {selectedTicket.Title}");
+            ConsoleUI.PrintInfo($"Description: {selectedTicket.Description}");
+            ConsoleUI.PrintInfo($"Status: {selectedTicket.Status}");
+            ConsoleUI.PrintInfo($"Priority: {selectedTicket.Priority}");
+            ConsoleUI.PrintInfo($"Department: {selectedTicket.Department}");
+            ConsoleUI.PrintInfo($"Created: {selectedTicket.CreatedAt:yyyy-MM-dd}");
 
             ConsoleUI.PrintDivider();
             ConsoleUI.PrintInfo("Comments:");
 
-            if (ticket.Comments.Count == 0)
+            if (selectedTicket.Comments.Count == 0)
             {
                 ConsoleUI.PrintInfo("No comments yet.");
             }
             else
             {
-                foreach (Comment comment in ticket.Comments)
+                foreach (Comment comment in selectedTicket.Comments)
                 {
                     ConsoleUI.PrintInfo(
                         $"{comment.CreatedAt:yyyy-MM-dd HH:mm} - {comment.Text}"
@@ -161,8 +164,10 @@ namespace HelpDeskTicketingSystem.Modules.Client
 
             ConsoleUI.Pause();
         }
+        
         private static void AddComment(Models.Client client)
         {
+            ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("Add Comment");
 
             ConsoleUI.Print("Enter Ticket ID: ");
@@ -207,6 +212,7 @@ namespace HelpDeskTicketingSystem.Modules.Client
 
         private static void CloseTicket(Models.Client client)
         {
+            ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("Close Ticket");
 
             ConsoleUI.Print("Enter Ticket ID: ");
@@ -258,20 +264,56 @@ namespace HelpDeskTicketingSystem.Modules.Client
         }
         private static void EditProfile(Models.Client client)
         {
-            ConsoleUI.PrintHeader("Edit Profile");
+            while (true)
+            {
+                ConsoleUI.ClearScreen();
+                ConsoleUI.PrintHeader("Edit Profile");
 
-            string name = ConsoleUI.ReadName("Enter new name: ");
-            string email = ConsoleUI.ReadEmail("Enter new email: ");
+                ConsoleUI.PrintInfo("1. Edit Name");
+                ConsoleUI.PrintInfo("2. Edit Email");
+                ConsoleUI.PrintInfo("0. Back");
 
-            client.Name = name;
-            client.Email = email;
+                ConsoleUI.Print("Choose: ");
+                string choice = Console.ReadLine();
 
-            ConsoleUI.PrintSuccess("Profile updated successfully.");
-            ConsoleUI.Pause();
+                switch (choice)
+                {
+                    case "1":
+                        ConsoleUI.ClearScreen();
+                        ConsoleUI.PrintHeader("Edit Name");
+
+                        string name = ConsoleUI.ReadName("Enter new name: ");
+                        client.Name = name;
+
+                        ConsoleUI.PrintSuccess("Name updated successfully.");
+                        ConsoleUI.Pause();
+                        break;
+
+                    case "2":
+                        ConsoleUI.ClearScreen();
+                        ConsoleUI.PrintHeader("Edit Email");
+
+                        string email = ConsoleUI.ReadEmail("Enter new email: ");
+                        client.Email = email;
+
+                        ConsoleUI.PrintSuccess("Email updated successfully.");
+                        ConsoleUI.Pause();
+                        break;
+
+                    case "0":
+                        return;
+
+                    default:
+                        ConsoleUI.PrintError("Invalid choice.");
+                        ConsoleUI.Pause();
+                        break;
+                }
+            }
         }
 
         private static void ChangePassword(Models.Client client)
         {
+            ConsoleUI.ClearScreen();
             ConsoleUI.PrintHeader("Change Password");
 
             string currentPassword =
