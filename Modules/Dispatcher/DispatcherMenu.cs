@@ -82,7 +82,7 @@ namespace HelpDeskTicketingSystem.Modules.Dispatcher
         {
             int action = ConsoleUI.PrintMenu("Assign this ticket",
             [
-                "Route to a department (auto-assign to least busy agent)",
+                "Route to a department",
                 "Take ownership personally",
                 "Cancel"
             ]);
