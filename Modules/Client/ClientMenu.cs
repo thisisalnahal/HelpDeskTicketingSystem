@@ -13,6 +13,7 @@ namespace HelpDeskTicketingSystem.Modules.Client
     {
         public static void Show(Models.Client client)
         {
+            ConsoleUI.ClearScreen();
             while (true)
             {
                 int choice = ConsoleUI.PrintMenu(
