@@ -67,10 +67,6 @@ namespace HelpDeskTicketingSystem.Modules.Agent
             return TicketStatusService.TryTransition(ticket, TicketStatus.Resolved, agent, out error);
         }
 
-        // TEMP: Services/CommentPermissionService.cs is still empty (checked the file,
-        // no methods in it yet). Once whoever owns it fills it in, replace this whole
-        // check with a call to it. This matches doc section 6.2 for the Agent case only:
-        // must be the assigned agent, ticket must have started progress, and never on Closed.
         public static bool AddComment(int ticketId, User agent, string text, out string error)
         {
             error = "";
@@ -82,28 +78,12 @@ namespace HelpDeskTicketingSystem.Modules.Agent
                 return false;
             }
 
-            if (ticket.AssignedUserId != agent.Id)
+            if (!CommentPermissionService.CanComment(ticket, agent))
             {
-                error = "This ticket is not assigned to you.";
+                error = "You are not allowed to comment on this ticket right now.";
                 return false;
             }
 
-            if (ticket.Status == TicketStatus.Closed)
-            {
-                error = "This ticket is closed. No further comments allowed.";
-                return false;
-            }
-
-            bool hasStartedProgress = ticket.Status == TicketStatus.InProgress || ticket.Status == TicketStatus.Resolved;
-            if (!hasStartedProgress)
-            {
-                error = "You can't comment yet. Start progress on the ticket first.";
-                return false;
-            }
-
-            // Confirmed against the real Comment.cs: Id, TicketId, AuthorId, Text, CreatedAt.
-            // There's no AuthorRole field on Comment — the author's role is looked up
-            // via AuthorId + DataStore.GetUserById() whenever a comment is displayed.
             Comment comment = new Comment();
             comment.Id = DataStore.GetNextCommentId();
             comment.TicketId = ticket.Id;
