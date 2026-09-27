@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HelpDeskTicketingSystem")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+63b8975c4a22d47104e770bb70edf26ce1331055")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9ac8347cd9051ab165bf6586b9493b5ff175b913")]
 [assembly: System.Reflection.AssemblyProductAttribute("HelpDeskTicketingSystem")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HelpDeskTicketingSystem")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "D:\\HelpDeskProject\\HelpDeskTicketingSystem.csproj": {}
+    "D:\\DEPI\\Projects\\HelpDeskTicketingSystem\\HelpDeskTicketingSystem\\HelpDeskTicketingSystem.csproj": {}
   },
   "projects": {
-    "D:\\HelpDeskProject\\HelpDeskTicketingSystem.csproj": {
+    "D:\\DEPI\\Projects\\HelpDeskTicketingSystem\\HelpDeskTicketingSystem\\HelpDeskTicketingSystem.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\HelpDeskProject\\HelpDeskTicketingSystem.csproj",
+        "projectUniqueName": "D:\\DEPI\\Projects\\HelpDeskTicketingSystem\\HelpDeskTicketingSystem\\HelpDeskTicketingSystem.csproj",
         "projectName": "HelpDeskTicketingSystem",
-        "projectPath": "D:\\HelpDeskProject\\HelpDeskTicketingSystem.csproj",
-        "packagesPath": "C:\\Users\\Imran\\.nuget\\packages\\",
-        "outputPath": "D:\\HelpDeskProject\\obj\\",
+        "projectPath": "D:\\DEPI\\Projects\\HelpDeskTicketingSystem\\HelpDeskTicketingSystem\\HelpDeskTicketingSystem.csproj",
+        "packagesPath": "C:\\Users\\elnah\\.nuget\\packages\\",
+        "outputPath": "D:\\DEPI\\Projects\\HelpDeskTicketingSystem\\HelpDeskTicketingSystem\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Imran\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\elnah\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
