@@ -1,341 +1,263 @@
-﻿using HelpDeskTicketingSystem.UI;
-using System;
-using System.Collections.Generic;
-using HelpDeskTicketingSystem.Data;
-using HelpDeskTicketingSystem.Enums;
-using HelpDeskTicketingSystem.Models;
-using HelpDeskTicketingSystem.Security;
-using HelpDeskTicketingSystem.Services;
+using HelpDeskTicketingSystem.Domain.Entities;
+using HelpDeskTicketingSystem.Domain.Enums;
+using HelpDeskTicketingSystem.Interfaces.Auth;
+using HelpDeskTicketingSystem.Interfaces.Roles;
+using HelpDeskTicketingSystem.Interfaces.Tickets;
+using HelpDeskTicketingSystem.Presentation.Helpers;
+using HelpDeskTicketingSystem.Presentation.UI;
 
-namespace HelpDeskTicketingSystem.Modules.Client
+namespace HelpDeskTicketingSystem.Presentation.Menus
 {
-    internal class ClientMenu
+    internal class ClientMenu : IRoleMenu
     {
-        public static void Show(Models.Client client)
+        private readonly IConsoleUI _ui;
+        private readonly IClientService _clientService;
+        private readonly IAuthService _authService;
+        private readonly ICommentPermissionService _commentPermission;
+        private readonly TicketDisplayHelper _ticketDisplay;
+
+        public ClientMenu(
+            IConsoleUI ui,
+            IClientService clientService,
+            IAuthService authService,
+            ICommentPermissionService commentPermission,
+            TicketDisplayHelper ticketDisplay)
+        {
+            _ui = ui;
+            _clientService = clientService;
+            _authService = authService;
+            _commentPermission = commentPermission;
+            _ticketDisplay = ticketDisplay;
+        }
+
+        public Role Role => Role.Client;
+
+        public void Show(User user)
         {
             while (true)
             {
-                ConsoleUI.ClearScreen();
-                int choice = ConsoleUI.PrintMenu(
-                    "Client Menu",
-                    new string[]
-                    {
-                        "Create Ticket",
-                        "View My Tickets",
-                        "Edit Profile",
-                        "Change Password",
-                        "Logout"
-                    });
+                _ui.ClearScreen();
+                int choice = _ui.PrintMenu($"CLIENT MENU - {user.Name}",
+                [
+                    "Create ticket",
+                    "My tickets",
+                    "Edit profile",
+                    "Change password",
+                    "Logout"
+                ]);
 
                 switch (choice)
                 {
                     case 1:
-                        CreateTicket(client);
+                        CreateTicket(user);
                         break;
-
                     case 2:
-                        ViewMyTickets(client);
+                        ViewMyTickets(user);
                         break;
-
                     case 3:
-                        EditProfile(client);
+                        EditProfile(user);
                         break;
-
                     case 4:
-                        ChangePassword(client);
+                        ChangePassword(user);
                         break;
-
                     case 5:
-                        ConsoleUI.PrintInfo("Logging out...");
-                        ConsoleUI.Pause();
+                        _ui.PrintInfo("Logging out...");
+                        _ui.Pause();
                         return;
                 }
             }
         }
 
-        private static void CreateTicket(Models.Client client)
+        private void CreateTicket(User user)
         {
-            ConsoleUI.ClearScreen();
-            ConsoleUI.PrintHeader("Create Ticket");
+            _ui.ClearScreen();
+            _ui.PrintHeader("CREATE TICKET");
 
-            string title = ConsoleUI.ReadName("Enter ticket title: ");
-            string description = ConsoleUI.ReadName("Enter ticket description: ");
+            string title = _ui.ReadText("Ticket title: ");
+            string description = _ui.ReadText("Describe the problem: ");
 
-            Ticket ticket = new Ticket
-            {
-                Id = DataStore.GetNextTicketId(),
-                Title = title,
-                Description = description,
-                Status = TicketStatus.Open,
-                ClientId = client.Id
-            };
+            Ticket ticket = _clientService.CreateTicket(user.Id, title, description);
 
-            DataStore.Tickets.Add(ticket);
-
-            ConsoleUI.PrintSuccess($"Ticket #{ticket.Id} created successfully.");
-            ConsoleUI.Pause();
+            _ui.PrintSuccess($"Ticket #{ticket.Id} created. A dispatcher will review it soon.");
+            _ui.Pause();
         }
 
-        private static void ViewMyTickets(Models.Client client)
+        private void ViewMyTickets(User user)
         {
-            ConsoleUI.ClearScreen();
-            ConsoleUI.PrintHeader("My Tickets");
+            _ui.ClearScreen();
+            _ui.PrintHeader("MY TICKETS");
 
-            List<Ticket> tickets = DataStore.GetTicketsByClient(client.Id);
+            List<Ticket> tickets = _clientService.GetMyTickets(user.Id);
 
             if (tickets.Count == 0)
             {
-                ConsoleUI.PrintInfo("You have no tickets.");
-                ConsoleUI.Pause();
+                _ui.PrintInfo("You have no tickets.");
+                _ui.Pause();
                 return;
             }
 
-            string[] headers = new string[] { "ID", "Title", "Priority", "Department", "Status" };
-            List<string[]> rows = new List<string[]>();
+            _ticketDisplay.PrintTicketTable(tickets);
+            _ui.PrintDivider();
 
-            foreach (var ticket in tickets)
-            {
-                rows.Add(new string[] {
-                    ticket.Id.ToString(),
-                    ticket.Title,
-                    ticket.Priority.ToString(),
-                    ticket.Department.ToString(),
-                    ticket.Status.ToString()
-                });
-            }
-            ConsoleUI.PrintTable(headers, rows);
-
-            ConsoleUI.PrintDivider();
-            ConsoleUI.Print("Enter Ticket ID to view details or 0 to go back: ");
-
-            if (!int.TryParse(Console.ReadLine(), out int ticketId))
-            {
-                ConsoleUI.PrintError("Invalid Ticket ID.");
-                ConsoleUI.Pause();
-                return;
-            }
+            int ticketId = _ui.ReadInt("Enter ticket ID to view details (0 to go back): ");
 
             if (ticketId == 0)
                 return;
 
-            Ticket selectedTicket = DataStore.GetTicketById(ticketId);
-
-            if (selectedTicket == null || selectedTicket.ClientId != client.Id)
+            if (_clientService.GetMyTicket(user.Id, ticketId) == null)
             {
-                ConsoleUI.PrintError("Ticket not found.");
-                ConsoleUI.Pause();
+                _ui.PrintError("Ticket not found.");
+                _ui.Pause();
                 return;
             }
 
-            ShowTicketDetails(client, selectedTicket);
+            ShowTicketDetails(user, ticketId);
         }
 
-        // Loops on a single ticket's details screen so actions taken here (comment,
-        // close) redraw the updated ticket immediately, instead of forcing the
-        // client back to the list to see the result of what they just did.
-        private static void ShowTicketDetails(Models.Client client, Ticket ticket)
+        private void ShowTicketDetails(User user, int ticketId)
         {
             while (true)
             {
-                ConsoleUI.ClearScreen();
-                ConsoleUI.PrintHeader("Ticket Details");
+                Ticket? ticket = _clientService.GetMyTicket(user.Id, ticketId);
 
-                ConsoleUI.PrintInfo($"ID: {ticket.Id}");
-                ConsoleUI.PrintInfo($"Title: {ticket.Title}");
-                ConsoleUI.PrintInfo($"Description: {ticket.Description}");
-                ConsoleUI.PrintInfo($"Status: {ticket.Status}");
-                ConsoleUI.PrintInfo($"Priority: {ticket.Priority}");
-                ConsoleUI.PrintInfo($"Department: {ticket.Department}");
-                ConsoleUI.PrintInfo($"Created: {ticket.CreatedAt:yyyy-MM-dd}");
-
-                ConsoleUI.PrintDivider();
-                ConsoleUI.PrintInfo("Comments:");
-
-                if (ticket.Comments.Count == 0)
+                if (ticket == null)
                 {
-                    ConsoleUI.PrintInfo("No comments yet.");
-                }
-                else
-                {
-                    foreach (Comment comment in ticket.Comments)
-                    {
-                        // Look up the ACTUAL author of each comment, not the
-                        // currently logged-in client - a comment thread can
-                        // include the Agent/Dispatcher too.
-                        User author = DataStore.GetUserById(comment.AuthorId);
-                        string authorName = author != null ? author.Name : "Unknown";
-
-                        ConsoleUI.PrintInfo($"{authorName} - {comment.CreatedAt:yyyy-MM-dd HH:mm}");
-                        ConsoleUI.PrintInfo($"  {comment.Text}");
-                    }
+                    _ui.PrintError("Ticket not found.");
+                    _ui.Pause();
+                    return;
                 }
 
-                ConsoleUI.PrintDivider();
+                _ui.ClearScreen();
+                _ticketDisplay.PrintTicketDetails(ticket);
 
-                bool canComment = CommentPermissionService.CanComment(ticket, client);
-                bool canClose = ticket.Status == TicketStatus.Resolved;
+                List<string> labels = new List<string>();
+                List<string> keys = new List<string>();
 
-                var options = new List<string>();
-                if (canComment) options.Add("Add comment");
-                if (canClose) options.Add("Close ticket");
-                options.Add("Back");
-
-                int choice = ConsoleUI.PrintMenu("Choose operation", options.ToArray());
-                string selected = options[choice - 1];
-
-                if (selected == "Add comment")
+                if (_commentPermission.CanComment(ticket, user))
                 {
-                    AddComment(client, ticket);
+                    labels.Add("Add comment");
+                    keys.Add("comment");
                 }
-                else if (selected == "Close ticket")
+
+                if (ticket.Status == TicketStatus.Resolved)
                 {
-                    if (CloseTicket(client, ticket))
-                        return; // ticket closed - nothing left to do here, back to list
+                    labels.Add("Confirm the solution and close the ticket");
+                    keys.Add("close");
                 }
-                else
+
+                labels.Add("Back");
+                keys.Add("back");
+
+                int choice = _ui.PrintMenu("Choose operation", labels.ToArray());
+                string key = keys[choice - 1];
+
+                if (key == "comment")
                 {
-                    return; // Back
+                    AddComment(user, ticket.Id);
                 }
-            }
-        }
-
-        private static void AddComment(Models.Client client, Ticket ticket)
-        {
-            ConsoleUI.ClearScreen();
-            ConsoleUI.PrintHeader("Add Comment");
-
-            if (!CommentPermissionService.CanComment(ticket, client))
-            {
-                ConsoleUI.PrintError("You are not allowed to comment on this ticket.");
-                ConsoleUI.Pause();
-                return;
-            }
-
-            string text = ConsoleUI.ReadName("Enter your comment: ");
-
-            Comment comment = new Comment
-            {
-                Id = DataStore.GetNextCommentId(),
-                TicketId = ticket.Id,
-                AuthorId = client.Id,
-                Text = text
-            };
-
-            ticket.Comments.Add(comment);
-
-            ConsoleUI.PrintSuccess("Comment added successfully.");
-            ConsoleUI.Pause();
-        }
-
-        // Returns true if the ticket was actually closed, so the caller knows
-        // whether to keep showing details (cancelled) or go back (closed).
-        private static bool CloseTicket(Models.Client client, Ticket ticket)
-        {
-            ConsoleUI.ClearScreen();
-            ConsoleUI.PrintHeader("Close Ticket");
-
-            if (ticket.Status != TicketStatus.Resolved)
-            {
-                ConsoleUI.PrintError("Only resolved tickets can be closed.");
-                ConsoleUI.Pause();
-                return false;
-            }
-
-            if (!ConsoleUI.Confirm("Close this ticket?"))
-            {
-                ConsoleUI.PrintInfo("Cancelled.");
-                ConsoleUI.Pause();
-                return false;
-            }
-
-            string error;
-            if (TicketStatusService.TryTransition(ticket, TicketStatus.Closed, client, out error))
-            {
-                ConsoleUI.PrintSuccess("Ticket closed successfully.");
-                ConsoleUI.Pause();
-                return true;
-            }
-            else
-            {
-                ConsoleUI.PrintError(error);
-                ConsoleUI.Pause();
-                return false;
-            }
-        }
-
-        private static void EditProfile(Models.Client client)
-        {
-            while (true)
-            {
-                ConsoleUI.ClearScreen();
-                int choice = ConsoleUI.PrintMenu(
-                    "Edit Profile",
-                    new string[]
-                    {
-                        "Edit Name",
-                        "Edit Email",
-                        "Back"
-                    });
-
-                switch (choice)
+                else if (key == "close")
                 {
-                    case 1:
-                        ConsoleUI.ClearScreen();
-                        ConsoleUI.PrintHeader("Edit Name");
-
-                        string name = ConsoleUI.ReadName("Enter new name: ");
-                        client.Name = name;
-
-                        ConsoleUI.PrintSuccess("Name updated successfully.");
-                        ConsoleUI.Pause();
-                        break;
-
-                    case 2:
-                        ConsoleUI.ClearScreen();
-                        ConsoleUI.PrintHeader("Edit Email");
-
-                        string email = ConsoleUI.ReadEmail("Enter new email: ");
-                        client.Email = email;
-
-                        ConsoleUI.PrintSuccess("Email updated successfully.");
-                        ConsoleUI.Pause();
-                        break;
-
-                    case 3:
+                    if (CloseTicket(user, ticket.Id))
                         return;
                 }
+                else
+                {
+                    return;
+                }
             }
         }
 
-        private static void ChangePassword(Models.Client client)
+        private void AddComment(User user, int ticketId)
         {
-            ConsoleUI.ClearScreen();
-            ConsoleUI.PrintHeader("Change Password");
+            string text = _ui.ReadText("Your comment: ");
 
-            string currentPassword = ConsoleUI.ReadPassword("Enter current password: ");
+            if (_clientService.TryAddComment(user.Id, ticketId, text, out string error))
+                _ui.PrintSuccess("Comment added.");
+            else
+                _ui.PrintError(error);
 
-            if (!PasswordHelper.Verify(currentPassword, client.PasswordHash))
+            _ui.Pause();
+        }
+
+        private bool CloseTicket(User user, int ticketId)
+        {
+            if (!_ui.Confirm("Close this ticket? No more comments will be possible"))
+                return false;
+
+            bool closed = _clientService.TryCloseTicket(user.Id, ticketId, out string error);
+
+            if (closed)
+                _ui.PrintSuccess("Ticket closed.");
+            else
+                _ui.PrintError(error);
+
+            _ui.Pause();
+            return closed;
+        }
+
+        private void EditProfile(User user)
+        {
+            while (true)
             {
-                ConsoleUI.PrintError("Current password is incorrect.");
-                ConsoleUI.Pause();
-                return;
-            }
+                _ui.ClearScreen();
+                int choice = _ui.PrintMenu("EDIT PROFILE",
+                [
+                    "Change name",
+                    "Change email",
+                    "Back"
+                ]);
 
-            string newPassword = ConsoleUI.ReadPassword("Enter new password: ");
-            string confirmPassword = ConsoleUI.ReadPassword("Confirm new password: ");
+                if (choice == 1)
+                {
+                    string name = _ui.ReadName("New name: ");
+
+                    if (_clientService.TryUpdateName(user.Id, name, out string error))
+                        _ui.PrintSuccess("Name updated.");
+                    else
+                        _ui.PrintError(error);
+
+                    _ui.Pause();
+                }
+                else if (choice == 2)
+                {
+                    string email = _ui.ReadEmail("New email: ");
+
+                    if (_clientService.TryUpdateEmail(user.Id, email, out string error))
+                        _ui.PrintSuccess("Email updated.");
+                    else
+                        _ui.PrintError(error);
+
+                    _ui.Pause();
+                }
+                else
+                {
+                    return;
+                }
+            }
+        }
+
+        private void ChangePassword(User user)
+        {
+            _ui.ClearScreen();
+            _ui.PrintHeader("CHANGE PASSWORD");
+
+            string currentPassword = _ui.ReadPassword("Current password: ");
+            string newPassword = _ui.ReadPassword("New password: ");
+            string confirmPassword = _ui.ReadPassword("Confirm new password: ");
 
             if (newPassword != confirmPassword)
             {
-                ConsoleUI.PrintError("Passwords do not match.");
-                ConsoleUI.Pause();
+                _ui.PrintError("The new passwords do not match.");
+                _ui.Pause();
                 return;
             }
 
-            client.PasswordHash = PasswordHelper.Hash(newPassword);
-            client.MustChangePassword = false;
+            if (_authService.TryChangePassword(user.Id, currentPassword, newPassword, out string error))
+                _ui.PrintSuccess("Password changed.");
+            else
+                _ui.PrintError(error);
 
-            ConsoleUI.PrintSuccess("Password changed successfully.");
-            ConsoleUI.Pause();
+            _ui.Pause();
         }
     }
 }
